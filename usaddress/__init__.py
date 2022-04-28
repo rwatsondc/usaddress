@@ -20,6 +20,39 @@ import probableparsing
 # Landmark, and Postal Address Data Standard
 # http://www.urisa.org/advocacy/united-states-thoroughfare-landmark-and-postal-address-data-standard
 
+def loadModel(labels_path, crf_model_path):
+    '''
+    This function allows a user to specify specific models/versions instead of
+    appending to existing model through retraining.
+    
+    The justification is a combination of:
+        - different regions may benefit from adhering to different stnadards (such as Puerto Rico)
+        - different regions might benefit from more tightly curated training data (to be confirmed later)
+    
+    labels_path is a simple single column "CSV" text file that maps 1:1 to expected
+    strings stored in list "LABELS"
+    
+    crf_model_path is the full path to the alternate for "usaddr.crfsuite" as generated
+    by parserator using labeled XML data
+    '''
+    global LABELS
+    with open(labels_path,'r') as temp:
+        LABELS = [x.replace('\n','') for x in temp.readlines()]
+    #--------
+    MODEL_PATH = crf_model_path
+    
+    
+    try:
+        local_TAGGER = pycrfsuite.Tagger()
+        local_TAGGER.open(MODEL_PATH)
+        global TAGGER
+        TAGGER = local_TAGGER
+    except IOError:
+        warnings.warn('You must train the model (parserator train --trainfile '
+                      'FILES) to create the %s file before you can use the parse '
+                      'and tag methods' % MODEL_FILE) 
+
+
 LABELS = [
     'AddressNumberPrefix',
     'AddressNumber',
@@ -53,7 +86,9 @@ PARENT_LABEL = 'AddressString'
 GROUP_LABEL = 'AddressCollection'
 
 MODEL_FILE = 'usaddr.crfsuite'
-MODEL_PATH = os.path.split(os.path.abspath(__file__))[0] + '/' + MODEL_FILE
+# MODEL_PATH = os.path.split(os.path.abspath(__file__))[0] + '/' + MODEL_FILE
+#does os.path.join matter?
+MODEL_PATH = os.path.join(os.path.split(os.path.abspath(__file__))[0],MODEL_FILE)
 
 DIRECTIONS = set(['n', 's', 'e', 'w',
                   'ne', 'nw', 'se', 'sw',
